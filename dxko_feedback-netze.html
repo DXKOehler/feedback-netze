@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f4f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem; }
+
+  .card { background: #fff; border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); padding: 2rem; width: 100%; max-width: 780px; position: relative; }
+
+  h1 { font-size: 18px; font-weight: 600; color: #1a1a18; margin-bottom: 1.5rem; }
+
+  .controls { display: flex; gap: 10px; margin-bottom: 1rem; }
+  .controls input {
+    flex: 1; font-size: 15px; padding: 10px 14px;
+    border: 1.5px solid #d3d1c7; border-radius: 10px;
+    background: #fafaf8; color: #1a1a18; outline: none;
+    transition: border-color 0.15s;
+  }
+  .controls input:focus { border-color: #7F77DD; background: #fff; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; font-size: 13.5px; font-weight: 500;
+    border-radius: 10px; cursor: pointer; transition: all 0.15s;
+    white-space: nowrap; border: none;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary  { background: #534AB7; color: #fff; }
+  .btn-primary:hover  { background: #3C3489; }
+  .btn-secondary { background: #fff; color: #444441; border: 1.5px solid #d3d1c7; }
+  .btn-secondary:hover { background: #f5f4f0; border-color: #b4b2a9; }
+  .btn-dev { background: #fff; color: #1A7A5E; border: 1.5px solid #1A7A5E; }
+  .btn-dev:hover { background: #e8f5f1; }
+  .btn-dev.active { background: #1A7A5E; color: #fff; }
+  .btn-dev.active:hover { background: #155F4A; }
+
+  .actions { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .actions .btn { flex: 1; justify-content: center; min-width: 120px; }
+
+  .mode-wrap { text-align: center; margin-bottom: 0.6rem; margin-top: 0.3rem; }
+  .mode-pill {
+    font-size: 12.5px; font-weight: 500; padding: 4px 14px;
+    border-radius: 20px; display: inline-block; letter-spacing: 0.01em;
+  }
+  .mode-pill.base { background: #eeecfb; color: #534AB7; }
+  .mode-pill.dev  { background: #dcf5ed; color: #1A7A5E; }
+
+  canvas { display: block; margin: 0 auto; width: 100%; max-width: 720px; height: auto; cursor: pointer; margin-top: 0.6rem; }
+
+  .legend { display: flex; gap: 18px; justify-content: center; margin-top: 0.6rem; font-size: 13px; color: #5F5E5A; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+  .hint { font-size: 12px; color: #888780; margin-bottom: 0.3rem; }
+
+  .edit-panel { margin-top: 1.5rem; border-top: 1px solid #ebe9e3; padding-top: 1.25rem; display: none; }
+  .edit-panel.open { display: block; }
+  .edit-panel h2 { font-size: 13px; font-weight: 600; color: #5F5E5A; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; }
+
+  .cat-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .cat-row input {
+    flex: 1; font-size: 14px; padding: 8px 11px;
+    border: 1.5px solid #d3d1c7; border-radius: 8px;
+    background: #fafaf8; color: #1a1a18; outline: none;
+    transition: border-color 0.15s;
+  }
+  .cat-row input:focus { border-color: #7F77DD; background: #fff; }
+  .btn-del {
+    width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; line-height: 1; cursor: pointer;
+    border: 1.5px solid #d3d1c7; background: #fff; color: #aaa;
+    transition: all 0.15s;
+  }
+  .btn-del:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+  .btn-add {
+    display: flex; align-items: center; gap: 6px; margin-top: 8px;
+    font-size: 13px; color: #534AB7; background: #eeecfb;
+    border: none; border-radius: 8px; padding: 7px 13px;
+    cursor: pointer; font-weight: 500; transition: background 0.15s;
+  }
+  .btn-add:hover { background: #ddd9f7; }
+
+  .credit { position: absolute; top: 1.5rem; right: 2rem; font-size: 11px; color: #bbb; font-style: italic; white-space: nowrap; }
+
+  .scale-controls { display: flex; gap: 12px; align-items: center; margin-bottom: 1rem; padding: 10px 12px; background: #f9f8f6; border-radius: 10px; transition: opacity 0.15s; }
+  .scale-controls.disabled { opacity: 0.6; }
+  .scale-slider { flex: 1; min-width: 120px; }
+  .scale-slider input { width: 100%; cursor: pointer; }
+  .scale-slider input:disabled { opacity: 0.5; cursor: not-allowed; }
+  .scale-label { font-size: 12px; color: #5F5E5A; font-weight: 500; min-width: 40px; }
+  .scale-label:disabled { opacity: 0.5; }
+  .btn-invert { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; font-size: 12px; background: #fff; border: 1.5px solid #d3d1c7; border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+  .btn-invert:hover { border-color: #b4b2a9; background: #f5f4f0; }
+  .btn-invert.active { background: #534AB7; color: #fff; border-color: #534AB7; }
+
+  .btn-discrete { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; font-size: 12px; background: #fff; border: 1.5px solid #d3d1c7; border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+  .btn-discrete:hover { border-color: #b4b2a9; background: #f5f4f0; }
+  .btn-discrete.active { background: #7F77DD; color: #fff; border-color: #7F77DD; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Spinne dein Feedbacknetz!</h1>
+
+  <div class="controls">
+    <input type="text" id="nameInput" placeholder="Name der Person …" />
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-secondary" onclick="resetAll()" title="Alle Eingaben zurücksetzen">↺ Zurücksetzen</button>
+    <button class="btn btn-secondary" onclick="toggleEdit()" title="Achsenlabels bearbeiten und neue Kategorien hinzufügen">✏️ Kategorien</button>
+    <button class="btn btn-dev" id="devToggle" onclick="toggleDevMode()" title="Entwicklung anzeigen: vergleicht Ausgangszustand mit aktuellem Stand">🌱 Entwicklung</button>
+    <button class="btn btn-primary" onclick="downloadChart()" title="Diagramm als PNG speichern">↓ PNG speichern</button>
+  </div>
+
+  <div class="scale-controls">
+    <label class="scale-label" title="Maximales Skalenniveau (Anzahl der Ringe)">Skala:</label>
+    <div class="scale-slider">
+      <input type="range" id="scaleSlider" min="3" max="15" value="5" title="Ändert die Anzahl der Bewertungsstufen von 3 bis 15" />
+    </div>
+    <span class="scale-label" id="scaleValue" title="Aktuell ausgewähltes Skalenniveau">5</span>
+    <button class="btn-invert" id="invertBtn" onclick="toggleInvert()" title="Skala invertieren: dreht das Netz um 180 Grad, damit höhere Werte innen liegen">⟲ Invert</button>
+    <button class="btn-discrete" id="discreteBtn" onclick="toggleDiscrete()" title="Diskreter Modus: nur Strahlen ohne Skalengitter, kontinuierliche Werte">◦ Diskret</button>
+  </div>
+
+  <p class="hint">Klicke auf die Punkte entlang der Achsen, um einen Wert (1–5) zu setzen.</p>
+
+  <div class="mode-wrap">
+    <span class="mode-pill base" id="modePill">● vorher</span>
+  </div>
+
+
+  <canvas id="radar" width="720" height="720"></canvas>
+
+  <div class="legend" id="legend"></div>
+
+  <div class="edit-panel" id="editPanel">
+    <h2>Kategorien bearbeiten</h2>
+    <div id="catList"></div>
+    <button class="btn-add" onclick="addCategory()">＋ Kategorie hinzufügen</button>
+  </div>
+</div>
+
+<script>
+let labels = ['Konzentration','Motivation','Inhaltliche Präzision','Aktive Beteiligung','Kritisches Hinterfragen','Hilfsbereitschaft','Entwicklung'];
+let LEVELS = 5;
+let inverted = false;
+let discreteMode = false;
+const CX = 360, CY = 360, R = 205;
+let s1 = labels.map(() => 0);
+let s2 = labels.map(() => 0);
+let s1_discrete = labels.map(() => 0);
+let s2_discrete = labels.map(() => 0);
+let devMode = false, showDev = false;
+
+const canvas = document.getElementById('radar');
+const ctx = canvas.getContext('2d');
+
+const N = () => labels.length;
+const angle = i => (Math.PI * 2 * i / N()) - Math.PI / 2;
+const pt = (i, lv) => {
+  const r = R * lv / LEVELS;
+  return [CX + r * Math.cos(angle(i)), CY + r * Math.sin(angle(i))];
+};
+
+function getDisplayLevel(lv) {
+  return inverted ? (LEVELS + 1 - lv) : lv;
+}
+
+function wrapText(text, x, y, maxW, lineH, align) {
+  ctx.textAlign = align;
+  const words = text.split(' ');
+  let line = '', lines = [];
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+    else line = test;
+  }
+  lines.push(line);
+  const sy = y - (lines.length - 1) * lineH / 2;
+  lines.forEach((l, i) => ctx.fillText(l, x, sy + i * lineH));
+}
+
+function draw() {
+  const n = N();
+  ctx.clearRect(0, 0, 720, 720);
+
+  // person name
+  const name = document.getElementById('nameInput').value.trim();
+  if (name) {
+    ctx.font = '500 15px system-ui,sans-serif';
+    ctx.fillStyle = '#534AB7';
+    ctx.textAlign = 'center';
+    ctx.fillText(name, CX, 26);
+  }
+
+  // grid rings
+  if (!discreteMode) {
+    for (let l = 1; l <= LEVELS; l++) {
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const [x, y] = pt(i, l);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+      ctx.lineWidth = l === LEVELS ? 1 : 0.5;
+      ctx.stroke();
+      // ring number
+      const [lx, ly] = pt(0, l);
+      ctx.font = '11px system-ui,sans-serif';
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.textAlign = 'center';
+      const displayL = getDisplayLevel(l);
+      ctx.fillText(displayL, lx + 7, ly - 4);
+    }
+  }
+
+  // axes
+  for (let i = 0; i < n; i++) {
+    const [x, y] = pt(i, LEVELS);
+    ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(x, y);
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 0.75; ctx.stroke();
+  }
+
+  // draw filled polygon + active dots
+  function drawPoly(scores, fillC, strokeC, dotC, dashed) {
+    if (!scores.some(s => s > 0)) return;
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const val = getDisplayLevel(scores[i]);
+      const [x, y] = pt(i, val || 0);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = fillC; ctx.fill();
+    if (dashed) ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = strokeC; ctx.lineWidth = 2.5; ctx.stroke();
+    ctx.setLineDash([]);
+    for (let i = 0; i < n; i++) {
+      const score = scores[i];
+      if (!score) continue;
+      const val = getDisplayLevel(score);
+      const [x, y] = pt(i, val);
+      ctx.beginPath(); ctx.arc(x, y, 6.5, 0, Math.PI * 2);
+      ctx.fillStyle = dotC; ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+  }
+
+  drawPoly(s1, 'rgba(83,74,183,0.18)', '#7F77DD', '#534AB7', false);
+  if (showDev) drawPoly(s2, 'rgba(26,122,94,0.15)', '#2ECC97', '#1A7A5E', true);
+
+  // draw discrete mode dots (continuous values)
+  if (discreteMode) {
+    function drawDiscretePoly(scores, fillC, strokeC, dotC, dashed) {
+      if (!scores.some(s => s > 0)) return;
+      ctx.beginPath();
+      for (let i = 0; i < n; i++) {
+        const [x, y] = pt(i, scores[i] || 0);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = fillC; ctx.fill();
+      if (dashed) ctx.setLineDash([5, 5]);
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.strokeStyle = strokeC; ctx.lineWidth = 2.75; ctx.stroke();
+      ctx.setLineDash([]);
+      for (let i = 0; i < n; i++) {
+        const score = scores[i];
+        if (!score) continue;
+        const [x, y] = pt(i, score);
+        ctx.beginPath(); ctx.arc(x, y, 6.5, 0, Math.PI * 2);
+        ctx.fillStyle = dotC; ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+    }
+    drawDiscretePoly(s1_discrete, 'rgba(83,74,183,0.18)', '#7F77DD', '#534AB7', false);
+    if (showDev) drawDiscretePoly(s2_discrete, 'rgba(26,122,94,0.15)', '#2ECC97', '#1A7A5E', true);
+  }
+
+  // labels — placed with enough clearance so nothing clips
+  ctx.font = '500 13px system-ui,sans-serif';
+  ctx.fillStyle = '#444441';
+  for (let i = 0; i < n; i++) {
+    const a = angle(i);
+    const dist = R + 48;
+    const lx = CX + dist * Math.cos(a);
+    const ly = CY + dist * Math.sin(a);
+    const ca = Math.cos(a);
+    const align = ca < -0.08 ? 'right' : ca > 0.08 ? 'left' : 'center';
+    wrapText(labels[i], lx, ly, 90, 16, align);
+  }
+
+  updateLegend();
+}
+
+function updateLegend() {
+  const el = document.getElementById('legend');
+  let h = `<div class="legend-item"><div class="legend-dot" style="background:#534AB7"></div><span>vorher</span></div>`;
+  if (showDev) h += `<div class="legend-item"><div class="legend-dot" style="background:#1A7A5E"></div><span>nacher</span></div>`;
+  el.innerHTML = h;
+}
+
+canvas.addEventListener('click', e => {
+  const r = canvas.getBoundingClientRect();
+  const sx = 720 / r.width, sy = 720 / r.height;
+  const mx = (e.clientX - r.left) * sx, my = (e.clientY - r.top) * sy;
+
+  if (discreteMode) {
+    // Discrete mode: continuous value along ray
+    let best = null, bestD = 999;
+    for (let i = 0; i < N(); i++) {
+      // Find closest point on ray (i)
+      const a = angle(i);
+      const rayX = Math.cos(a);
+      const rayY = Math.sin(a);
+      const dx = mx - CX;
+      const dy = my - CY;
+      const t = Math.max(0, Math.min(R, dx * rayX + dy * rayY));
+      const px = CX + t * rayX;
+      const py = CY + t * rayY;
+      const d = Math.hypot(mx - px, my - py);
+      if (d < bestD) { bestD = d; best = {i, t}; }
+    }
+    if (best && bestD < 26) {
+      const sc = devMode ? s2_discrete : s1_discrete;
+      const val = best.t / R * LEVELS;
+      sc[best.i] = sc[best.i] === val && val > 0 ? 0 : val;
+      draw();
+    }
+  } else {
+    // Standard mode: discrete levels 1-5
+    let best = null, bestD = 999;
+    for (let i = 0; i < N(); i++) {
+      for (let l = 1; l <= LEVELS; l++) {
+        const [x, y] = pt(i, l);
+        const d = Math.hypot(mx - x, my - y);
+        if (d < bestD) { bestD = d; best = {i, l}; }
+      }
+    }
+    if (best && bestD < 26) {
+      const sc = devMode ? s2 : s1;
+      const storeLevel = inverted ? getDisplayLevel(best.l) : best.l;
+      sc[best.i] = sc[best.i] === storeLevel ? storeLevel - 1 : storeLevel;
+      draw();
+    }
+  }
+});
+
+document.getElementById('nameInput').addEventListener('input', draw);
+
+function resetAll() { s1.fill(0); s2.fill(0); s1_discrete.fill(0); s2_discrete.fill(0); document.getElementById('nameInput').value = ''; draw(); }
+
+document.getElementById('scaleSlider').addEventListener('input', (e) => {
+  LEVELS = parseInt(e.target.value);
+  document.getElementById('scaleValue').textContent = LEVELS;
+  draw();
+});
+
+function toggleInvert() {
+  inverted = !inverted;
+  const btn = document.getElementById('invertBtn');
+  btn.classList.toggle('active', inverted);
+  draw();
+}
+
+function toggleDiscrete() {
+  discreteMode = !discreteMode;
+  const btn = document.getElementById('discreteBtn');
+  const slider = document.getElementById('scaleSlider');
+  const invertBtn = document.getElementById('invertBtn');
+  const controls = document.querySelector('.scale-controls');
+  btn.classList.toggle('active', discreteMode);
+  slider.disabled = discreteMode;
+  invertBtn.disabled = discreteMode;
+  controls.classList.toggle('disabled', discreteMode);
+  draw();
+}
+
+function toggleDevMode() {
+  devMode = !devMode;
+  const btn = document.getElementById('devToggle');
+  const pill = document.getElementById('modePill');
+  if (devMode) {
+    btn.classList.add('active');
+    pill.className = 'mode-pill dev';
+    pill.textContent = '● nacher';
+    showDev = true;
+  } else {
+    btn.classList.remove('active');
+    pill.className = 'mode-pill base';
+    pill.textContent = '● vorher';
+  }
+  draw();
+}
+
+function toggleEdit() {
+  const p = document.getElementById('editPanel');
+  p.classList.toggle('open');
+  if (p.classList.contains('open')) renderCatList();
+}
+
+function renderCatList() {
+  const list = document.getElementById('catList');
+  list.innerHTML = '';
+  labels.forEach((lbl, i) => {
+    const row = document.createElement('div');
+    row.className = 'cat-row';
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.value = lbl;
+    inp.addEventListener('input', () => { labels[i] = inp.value; draw(); });
+    const del = document.createElement('button');
+    del.className = 'btn-del'; del.title = 'Löschen'; del.innerHTML = '&times;';
+    del.addEventListener('click', () => {
+      if (labels.length <= 3) { alert('Mindestens 3 Kategorien erforderlich.'); return; }
+      labels.splice(i, 1); s1.splice(i, 1); s2.splice(i, 1); s1_discrete.splice(i, 1); s2_discrete.splice(i, 1);
+      renderCatList(); draw();
+    });
+    row.appendChild(inp); row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+
+function addCategory() {
+  if (labels.length >= 12) { alert('Maximal 12 Kategorien möglich.'); return; }
+  labels.push('Neue Kategorie'); s1.push(0); s2.push(0); s1_discrete.push(0); s2_discrete.push(0);
+  renderCatList(); draw();
+}
+
+function downloadChart() {
+  const off = document.createElement('canvas');
+  off.width = 720; off.height = showDev ? 760 : 720;
+  const oc = off.getContext('2d');
+  oc.fillStyle = '#fff'; oc.fillRect(0, 0, off.width, off.height);
+  oc.drawImage(canvas, 0, 0);
+
+  // draw legend if development is shown
+  if (showDev) {
+    oc.font = '13px system-ui,sans-serif';
+    const legendY = 745;
+    const dotR = 6;
+    const gap = 40;
+    
+    // Calculate centered position
+    const legendWidth = 60 + gap + 70;
+    let x = (720 - legendWidth) / 2;
+
+    // vorher
+    oc.fillStyle = '#534AB7';
+    oc.beginPath(); oc.arc(x, legendY, dotR, 0, Math.PI * 2); oc.fill();
+    oc.fillStyle = '#5F5E5A';
+    oc.textAlign = 'left';
+    oc.fillText('vorher', x + 15, legendY + 4);
+
+    // nachher
+    x += 60 + gap;
+    oc.fillStyle = '#1A7A5E';
+    oc.beginPath(); oc.arc(x, legendY, dotR, 0, Math.PI * 2); oc.fill();
+    oc.fillStyle = '#5F5E5A';
+    oc.textAlign = 'left';
+    oc.fillText('nachher', x + 15, legendY + 4);
+  }
+
+  const a = document.createElement('a');
+  const name = document.getElementById('nameInput').value.trim();
+  a.download = (name || 'spinnennetz') + '.png';
+  a.href = off.toDataURL('image/png');
+  a.click();
+}
+
+draw();
+</script>
+</body>
+</html>
